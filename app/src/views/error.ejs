@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+
+<div style="max-width: 500px; margin: 4rem auto; text-align: center;">
+  <div class="glass-card" style="padding: 3rem 2rem;">
+    <div style="font-size: 3.5rem; margin-bottom: 1rem;">⚠️</div>
+    <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 0.75rem;"><%= typeof title !== 'undefined' ? title : 'Thông Báo Lỗi' %></h2>
+    <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1rem;">
+      <%= typeof message !== 'undefined' ? message : 'Có lỗi không mong muốn đã xảy ra trong hệ thống.' %>
+    </p>
+    <a href="/albums" class="btn btn-primary">
+      &larr; Quay lại Trang Chủ
+    </a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

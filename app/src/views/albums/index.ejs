@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+
+<!-- Top bar: Title & Actions -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <h2 style="font-size: 1.85rem; font-weight: 700; letter-spacing: -0.02em;">Bộ sưu tập Album của bạn</h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Quản lý ảnh, phân loại theo danh mục và chia sẻ an toàn bằng mã token</p>
+  </div>
+  <div>
+    <button onclick="document.getElementById('createAlbumModal').style.display='flex'" class="btn btn-primary">
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Tạo Album Mới
+    </button>
+  </div>
+</div>
+
+<!-- Category Filters -->
+<div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+  <a href="/albums" class="btn btn-sm <%= !selectedCategory ? 'btn-primary' : 'btn-outline' %>">
+    Tất cả (<%= albums.length %>)
+  </a>
+  <% categories.forEach(cat => { %>
+    <a href="/albums?category=<%= cat.id %>" class="btn btn-sm <%= selectedCategory == cat.id ? 'btn-primary' : 'btn-outline' %>">
+      <%= cat.name %>
+    </a>
+  <% }) %>
+</div>
+
+<!-- Albums Grid -->
+<% if (albums.length === 0) { %>
+  <div class="glass-card" style="text-align: center; padding: 4rem 2rem; margin: 2rem 0;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📷</div>
+    <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Chưa có Album nào</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Hãy tạo album đầu tiên để bắt đầu lưu trữ và chia sẻ những khoảnh khắc tuyệt vời!</p>
+    <button onclick="document.getElementById('createAlbumModal').style.display='flex'" class="btn btn-primary">
+      Tạo Album Ngay
+    </button>
+  </div>
+<% } else { %>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+    <% albums.forEach(album => { %>
+      <div class="glass-card" style="overflow: hidden; display: flex; flex-direction: column;">
+        <!-- Album Cover -->
+        <a href="/albums/<%= album.id %>" style="display: block; height: 180px; background: #1e293b; position: relative; text-decoration: none; overflow: hidden;">
+          <% if (album.cover_photo) { %>
+            <img src="/uploads/<%= album.cover_photo %>" alt="<%= album.title %>" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <% } else { %>
+            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 2.5rem; background: linear-gradient(135deg, #1e293b, #0f172a);">
+              🖼️
+            </div>
+          <% } %>
+          <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; color: #fff;">
+            <%= album.photo_count %> ảnh
+          </div>
+        </a>
+
+        <!-- Album Info -->
+        <div style="padding: 1.25rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <% if (album.category_name) { %>
+              <span style="font-size: 0.75rem; color: var(--accent); background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.25); padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;">
+                <%= album.category_name %>
+              </span>
+            <% } %>
+            <h3 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 0.4rem;">
+              <a href="/albums/<%= album.id %>" style="color: var(--text-main); text-decoration: none;">
+                <%= album.title %>
+              </a>
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+              <%= album.description || 'Không có mô tả' %>
+            </p>
+          </div>
+
+          <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
+            <span><%= new Date(album.created_at).toLocaleDateString('vi-VN') %></span>
+            <a href="/albums/<%= album.id %>" class="btn btn-outline btn-sm">Xem chi tiết &rarr;</a>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<!-- Modal: Tạo Album Mới -->
+<div id="createAlbumModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="glass-card" style="width: 100%; max-width: 500px; padding: 2rem; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1.35rem; font-weight: 700;">Tạo Album Mới</h3>
+      <button onclick="document.getElementById('createAlbumModal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <form action="/albums" method="POST">
+      <div class="form-group">
+        <label for="title">Tên Album (*)</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="Ví dụ: Chuyến đi Đà Nẵng 2026" required>
+      </div>
+
+      <div class="form-group">
+        <label for="category_id">Danh mục phân loại</label>
+        <select id="category_id" name="category_id" class="form-control">
+          <option value="">-- Chọn danh mục --</option>
+          <% categories.forEach(cat => { %>
+            <option value="<%= cat.id %>"><%= cat.name %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Mô tả Album</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Ghi chú thêm về album ảnh này..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" onclick="document.getElementById('createAlbumModal').style.display='none'" class="btn btn-outline">Hủy</button>
+        <button type="submit" class="btn btn-primary">Tạo Album</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

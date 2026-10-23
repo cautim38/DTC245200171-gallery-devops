@@ -1,0 +1,200 @@
+<%- include('../partials/header') %>
+
+<!-- Breadcrumb & Navigation -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+    <a href="/albums" style="color: var(--accent); text-decoration: none;">&larr; Quay lại danh sách Album</a>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <button onclick="document.getElementById('editAlbumModal').style.display='flex'" class="btn btn-outline btn-sm">
+      ✏️ Sửa Album
+    </button>
+    <form action="/albums/<%= album.id %>/delete" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa toàn bộ album này cùng tất cả ảnh bên trong?');" style="margin: 0;">
+      <button type="submit" class="btn btn-danger btn-sm">
+        🗑️ Xóa Album
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Album Header Info Card -->
+<div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+    <div style="max-width: 750px;">
+      <% if (album.category_name) { %>
+        <span style="font-size: 0.8rem; color: var(--accent); background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.25); padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600; display: inline-block; margin-bottom: 0.75rem;">
+          <%= album.category_name %>
+        </span>
+      <% } %>
+      <h2 style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem;"><%= album.title %></h2>
+      <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.6;"><%= album.description || 'Chưa có mô tả cho album này.' %></p>
+      <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+        📅 Tạo ngày: <strong><%= new Date(album.created_at).toLocaleDateString('vi-VN') %></strong> • Tổng số: <strong><%= photos.length %> ảnh</strong>
+      </div>
+    </div>
+
+    <!-- Actions / Share trigger -->
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; min-width: 200px;">
+      <button onclick="document.getElementById('uploadModal').style.display='flex'" class="btn btn-primary">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Tải Ảnh Lên
+      </button>
+      <button onclick="document.getElementById('shareModal').style.display='flex'" class="btn btn-outline">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+        Chia Sẻ Album (<%= shares.length %>)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Photos Grid -->
+<% if (photos.length === 0) { %>
+  <div class="glass-card" style="text-align: center; padding: 4rem 2rem; border-style: dashed; border-width: 2px;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🖼️</div>
+    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Album này chưa có bức ảnh nào</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Nhấn nút bên dưới để tải ảnh đầu tiên lên album này (hỗ trợ JPG, PNG, WEBP, GIF tối đa 10MB).</p>
+    <button onclick="document.getElementById('uploadModal').style.display='flex'" class="btn btn-primary">
+      Tải Ảnh Lên Ngay
+    </button>
+  </div>
+<% } else { %>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem;">
+    <% photos.forEach(photo => { %>
+      <div class="glass-card" style="overflow: hidden; position: relative; group; border-radius: 10px;">
+        <a href="/uploads/<%= photo.filename %>" target="_blank" style="display: block; height: 200px; background: #000; overflow: hidden;">
+          <img src="/uploads/<%= photo.filename %>" alt="<%= photo.original_name %>" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+        </a>
+        <div style="padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8);">
+          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; max-width: 150px;" title="<%= photo.original_name %>">
+            <%= photo.original_name %>
+          </div>
+          <form action="/photos/<%= photo.id %>/delete" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa ảnh này vĩnh viễn?');" style="margin: 0;">
+            <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Xóa ảnh">
+              Xóa
+            </button>
+          </form>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<!-- Modal: Tải Ảnh Lên -->
+<div id="uploadModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="glass-card" style="width: 100%; max-width: 500px; padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1.35rem; font-weight: 700;">Tải Ảnh Vào Album</h3>
+      <button onclick="document.getElementById('uploadModal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <form action="/albums/<%= album.id %>/photos" method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="photos">Chọn file ảnh (có thể chọn nhiều ảnh cùng lúc)</label>
+        <input type="file" id="photos" name="photos" class="form-control" multiple accept="image/jpeg,image/png,image/webp,image/gif" required>
+        <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
+          Định dạng hỗ trợ: JPG, PNG, WEBP, GIF (Dung lượng tối đa: 10MB/ảnh)
+        </span>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" onclick="document.getElementById('uploadModal').style.display='none'" class="btn btn-outline">Hủy</button>
+        <button type="submit" class="btn btn-primary">Bắt đầu Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Quản Lý Chia Sẻ (Share Tokens) -->
+<div id="shareModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="glass-card" style="width: 100%; max-width: 600px; padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1.35rem; font-weight: 700;">Quản Lý Link Chia Sẻ</h3>
+      <button onclick="document.getElementById('shareModal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <!-- Nút tạo token chia sẻ mới -->
+    <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius);">
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Tạo một liên kết ngẫu nhiên bảo mật (token 48 ký tự) để người khác có thể xem album mà không cần tài khoản.
+      </p>
+      <form action="/albums/<%= album.id %>/share" method="POST">
+        <button type="submit" class="btn btn-primary btn-sm">
+          🔗 Tạo Link Chia Sẻ Mới
+        </button>
+      </form>
+    </div>
+
+    <!-- Danh sách link đã tạo -->
+    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Các liên kết đang hoạt động:</h4>
+    <% if (shares.length === 0) { %>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Album này hiện đang ở chế độ Riêng tư (Private).</p>
+    <% } else { %>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 250px; overflow-y: auto;">
+        <% shares.forEach(s => { 
+          const shareUrl = `${protocol}://${host}/share/${s.token}`;
+        %>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px;">
+            <div style="overflow: hidden; margin-right: 0.75rem;">
+              <input type="text" readonly value="<%= shareUrl %>" id="input_<%= s.id %>" class="form-control" style="font-size: 0.8rem; padding: 0.35rem 0.5rem; background: rgba(0,0,0,0.4);" onclick="this.select()">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Tạo ngày: <%= new Date(s.created_at).toLocaleDateString('vi-VN') %></span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button onclick="navigator.clipboard.writeText('<%= shareUrl %>'); alert('Đã sao chép link chia sẻ vào Clipboard!');" class="btn btn-outline btn-sm" type="button" title="Copy Link">
+                📋
+              </button>
+              <form action="/albums/<%= album.id %>/revoke-share" method="POST" style="margin: 0;">
+                <input type="hidden" name="share_id" value="<%= s.id %>">
+                <button type="submit" class="btn btn-danger btn-sm" title="Thu hồi link">
+                  Thu hồi
+                </button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+      <button type="button" onclick="document.getElementById('shareModal').style.display='none'" class="btn btn-outline">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Sửa Album -->
+<div id="editAlbumModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="glass-card" style="width: 100%; max-width: 500px; padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1.35rem; font-weight: 700;">Chỉnh Sửa Album</h3>
+      <button onclick="document.getElementById('editAlbumModal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <form action="/albums/<%= album.id %>/edit" method="POST">
+      <div class="form-group">
+        <label for="edit_title">Tên Album (*)</label>
+        <input type="text" id="edit_title" name="title" value="<%= album.title %>" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="edit_category_id">Danh mục phân loại</label>
+        <select id="edit_category_id" name="category_id" class="form-control">
+          <option value="">-- Chọn danh mục --</option>
+          <% categories.forEach(cat => { %>
+            <option value="<%= cat.id %>" <%= album.category_id == cat.id ? 'selected' : '' %>><%= cat.name %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="edit_description">Mô tả Album</label>
+        <textarea id="edit_description" name="description" class="form-control" rows="3"><%= album.description || '' %></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" onclick="document.getElementById('editAlbumModal').style.display='none'" class="btn btn-outline">Hủy</button>
+        <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

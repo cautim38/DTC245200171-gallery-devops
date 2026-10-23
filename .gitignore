@@ -1,0 +1,31 @@
+# Phụ thuộc & File nhạy cảm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Biến môi trường
+.env
+.env.local
+.env.*.local
+
+# Khóa bảo mật & Chứng chỉ
+nginx/certs/*.key
+nginx/certs/*.crt
+nginx/certs/*.csr
+nginx/certs/*.pem
+
+# Dữ liệu runtime & upload cục bộ
+app/uploads/*
+!app/uploads/.gitkeep
+data/
+
+# Log cục bộ
+logs/
+*.log
+
+# Hệ điều hành & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

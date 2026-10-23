@@ -1,0 +1,45 @@
+<%- include('partials/header') %>
+
+<div style="max-width: 440px; margin: 3rem auto;">
+  <div class="glass-card" style="padding: 2.5rem 2rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em;">Đăng Nhập</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Hệ thống Quản lý Thư viện Ảnh - Đề số 31</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <form action="/auth/login" method="POST">
+      <div class="form-group">
+        <label for="username">Tên đăng nhập</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="Nhập username (ví dụ: demo)" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem;">
+          Đăng nhập ngay
+        </button>
+      </div>
+    </form>
+
+    <div style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem; color: var(--text-muted);">
+      Chưa có tài khoản? <a href="/auth/register" style="color: var(--accent); text-decoration: none; font-weight: 600;">Đăng ký tài khoản mới</a>
+    </div>
+
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+      Tài khoản test nhanh: <code>demo</code> / <code>DemoUser@2026</code>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
