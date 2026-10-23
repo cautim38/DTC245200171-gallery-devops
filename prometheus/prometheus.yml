@@ -1,0 +1,31 @@
+# Prometheus Configuration - Gallery DevOps Monitoring
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  # 1. Giám sát chính Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 2. Giám sát Containers qua cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # 3. Giám sát Nginx qua nginx-prometheus-exporter
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  # 4. Giám sát MySQL qua mysqld-exporter
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysqld-exporter:9104']
+
+  # 5. Giám sát Ứng dụng Gallery Node.js (Prom-client)
+  - job_name: 'gallery-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:3000']
