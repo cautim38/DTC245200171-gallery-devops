@@ -1,7 +1,7 @@
 # Prometheus Configuration - Gallery DevOps Monitoring
 global:
-  scrape_interval: 10s
-  evaluation_interval: 10s
+  scrape_interval: 30s
+  evaluation_interval: 30s
 
 scrape_configs:
   # 1. Giám sát chính Prometheus

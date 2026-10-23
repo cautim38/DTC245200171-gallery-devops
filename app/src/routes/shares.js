@@ -38,6 +38,13 @@ router.get('/:token', async (req, res) => {
       'SELECT id, filename, original_name, size, created_at FROM photos WHERE album_id = ? ORDER BY created_at DESC',
       [share.album_id]
     );
+    photos.forEach(p => {
+      try {
+        if (p.original_name && (p.original_name.includes('Ã') || /[\xC2-\xF4][\x80-\xBF]/.test(p.original_name))) {
+          p.original_name = Buffer.from(p.original_name, 'latin1').toString('utf8');
+        }
+      } catch (e) {}
+    });
 
     res.render('share', {
       title: `Chia sẻ: ${share.album_title} - Gallery`,

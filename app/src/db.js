@@ -4,7 +4,7 @@ const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'mysql',
   port: parseInt(process.env.MYSQL_PORT || '3306', 10),
   user: process.env.MYSQL_USER || 'gallery_app_user',
-  password: process.env.MYSQL_PASSWORD || 'GalleryAppPass2026!#',
+  password: process.env.MYSQL_PASSWORD || '123456',
   database: process.env.MYSQL_DATABASE || 'gallery_db',
   charset: 'utf8mb4',
   waitForConnections: true,

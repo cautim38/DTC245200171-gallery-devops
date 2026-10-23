@@ -24,11 +24,18 @@ router.post('/albums/:albumId/photos', requireAuth, upload.array('photos', 10), 
       return res.status(403).render('error', { message: 'Bạn không có quyền upload ảnh vào album này.' });
     }
 
-    // Lưu từng ảnh vào cơ sở dữ liệu
+    // Lưu từng ảnh vào cơ sở dữ liệu (Giải mã UTF-8 chuẩn cho tên file tiếng Việt)
     for (const file of req.files) {
+      let originalName = file.originalname;
+      try {
+        originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      } catch (e) {
+        originalName = file.originalname;
+      }
+
       await pool.query(
         'INSERT INTO photos (album_id, filename, original_name, mime_type, size) VALUES (?, ?, ?, ?, ?)',
-        [albumId, file.filename, file.originalname, file.mimetype, file.size]
+        [albumId, file.filename, originalName, file.mimetype, file.size]
       );
       // Tăng metrics Prometheus cho số ảnh upload
       photosUploadedTotal.inc();

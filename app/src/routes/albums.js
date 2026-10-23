@@ -85,6 +85,13 @@ router.get('/:id', async (req, res) => {
 
     const album = albums[0];
     const [photos] = await pool.query('SELECT * FROM photos WHERE album_id = ? ORDER BY created_at DESC', [albumId]);
+    photos.forEach(p => {
+      try {
+        if (p.original_name && (p.original_name.includes('Ã') || /[\xC2-\xF4][\x80-\xBF]/.test(p.original_name))) {
+          p.original_name = Buffer.from(p.original_name, 'latin1').toString('utf8');
+        }
+      } catch (e) {}
+    });
     const [shares] = await pool.query('SELECT * FROM shares WHERE album_id = ? ORDER BY created_at DESC', [albumId]);
     const [categories] = await pool.query('SELECT * FROM categories ORDER BY name ASC');
 

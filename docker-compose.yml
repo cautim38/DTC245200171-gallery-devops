@@ -1,0 +1,351 @@
+# ==============================================================================
+# DOCKER COMPOSE TRIỂN KHAI HỆ THỐNG GALLERY DEVOPS
+# Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Mã đề: 31
+# ==============================================================================
+
+networks:
+  # Mạng frontend: Cho phép Nginx giao tiếp với ứng dụng Gallery và phpMyAdmin
+  frontend:
+    driver: bridge
+
+  # Mạng backend: Internal cách ly hoàn toàn (Hardening Biện pháp 2)
+  # MySQL chỉ kết nối trong mạng này, không ra ngoài Internet và không mở port ra host
+  backend:
+    driver: bridge
+    internal: true
+
+  # Mạng monitoring: Dành riêng cho Prometheus, Grafana, Loki, Exporters
+  monitoring:
+    driver: bridge
+
+volumes:
+  uploads_data:
+    name: gallery_uploads_data
+  mysql_data:
+    name: gallery_mysql_data
+  prometheus_data:
+    name: gallery_prometheus_data
+  grafana_data:
+    name: gallery_grafana_data
+  loki_data:
+    name: gallery_loki_data
+  nginx_logs:
+    name: gallery_nginx_logs
+
+services:
+
+  # ----------------------------------------------------------------------------
+  # 1. NGINX REVERSE PROXY (HTTPS, SECURITY HEADERS, RATE LIMITING)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.25-alpine
+    container_name: gallery_nginx
+    restart: unless-stopped
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - frontend
+      - monitoring
+    depends_on:
+      app:
+        condition: service_healthy
+    # Hardening: Giới hạn tài nguyên và đặc quyền (Biện pháp 6 & 7)
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/stub_status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ----------------------------------------------------------------------------
+  # 2. GALLERY APPLICATION (NODE.JS + EXPRESS)
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: gallery-app:1.0.0
+    container_name: gallery_app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - APP_PORT=3000
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-gallery_db}
+      - MYSQL_USER=${MYSQL_USER:-gallery_app_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-123456}
+      - SESSION_SECRET=${SESSION_SECRET:-SecureGallerySessionKey_2026}
+      - UPLOAD_MAX_SIZE_MB=${UPLOAD_MAX_SIZE_MB:-10}
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - frontend
+      - backend
+      - monitoring
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # Hardening: User node non-root, giới hạn tài nguyên
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # 3. DATABASE MYSQL 8.0 (ISOLATED BACKEND)
+  # ----------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0.36
+    container_name: gallery_mysql
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --performance_schema=OFF
+      - --innodb_buffer_pool_size=64M
+      - --innodb_log_buffer_size=8M
+      - --max_connections=50
+      - --init-file=/etc/mysql/init-file.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallery_db}
+      MYSQL_USER: ${MYSQL_USER:-gallery_app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-123456}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./app/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./init-file.sql:/etc/mysql/init-file.sql:ro
+    networks:
+      - backend
+    # Hardening: KHÔNG publish port 3306 ra ngoài máy chủ, chỉ nội bộ backend (Biện pháp 2 & 8)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------
+  # 4. PHPMYADMIN (QUẢN TRỊ CƠ SỞ DỮ LIỆU)
+  # ----------------------------------------------------------------------------
+  phpmyadmin:
+    image: phpmyadmin:5.2.1-apache
+    container_name: gallery_phpmyadmin
+    restart: unless-stopped
+    ports:
+      # Hardening: Chỉ bind 127.0.0.1 (Biện pháp 8)
+      - "127.0.0.1:${PMA_PORT:-8081}:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 25M
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ----------------------------------------------------------------------------
+  # 5. PROMETHEUS (GIÁM SÁT THU THẬP METRICS)
+  # ----------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: gallery_prometheus
+    restart: unless-stopped
+    user: "nobody"
+    ports:
+      # Hardening: Chỉ bind 127.0.0.1 (Biện pháp 8)
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # ----------------------------------------------------------------------------
+  # 6. GRAFANA (DASHBOARD TRỰC QUAN HÓA)
+  # ----------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: gallery_grafana
+    restart: unless-stopped
+    user: "472"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-GrafanaAdminSecurePass2026!#}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+      - loki
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # ----------------------------------------------------------------------------
+  # 7. CADVISOR (METRICS TÀI NGUYÊN CONTAINER - ĐÃ TỐI ƯU CHO VMWARE)
+  # ----------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: gallery_cadvisor
+    restart: unless-stopped
+    privileged: false
+    command:
+      - --housekeeping_interval=30s
+      - --max_housekeeping_interval=60s
+      - --disable_metrics=disk,tcp,udp,percpu,sched,process
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 128M
+
+  # ----------------------------------------------------------------------------
+  # 8. NGINX PROMETHEUS EXPORTER
+  # ----------------------------------------------------------------------------
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.1.0
+    container_name: gallery_nginx_exporter
+    restart: unless-stopped
+    command:
+      - -nginx.scrape-uri=http://nginx:8080/stub_status
+    networks:
+      - monitoring
+      - frontend
+    depends_on:
+      - nginx
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 64M
+
+  # ----------------------------------------------------------------------------
+  # 9. MYSQLD EXPORTER (QUYỀN TỐI THIỂU CHO METRICS DB)
+  # ----------------------------------------------------------------------------
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: gallery_mysqld_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${MYSQL_EXPORTER_USER:-mysqld_exporter}:${MYSQL_EXPORTER_PASSWORD:-123456}@tcp(mysql:3306)/"
+    networks:
+      - monitoring
+      - backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 64M
+
+  # ----------------------------------------------------------------------------
+  # 10. LOKI (LƯU TRỮ LOG TẬP TRUNG)
+  # ----------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.5
+    container_name: gallery_loki
+    restart: unless-stopped
+    user: "10001"
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # ----------------------------------------------------------------------------
+  # 11. PROMTAIL (THU THẬP LOG CONTAINER ĐẨY VÀO LOKI)
+  # ----------------------------------------------------------------------------
+  promtail:
+    image: grafana/promtail:2.9.5
+    container_name: gallery_promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - nginx_logs:/var/log/nginx:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
