@@ -165,8 +165,7 @@ services:
     container_name: gallery_phpmyadmin
     restart: unless-stopped
     ports:
-      # Hardening: Chỉ bind 127.0.0.1 (Biện pháp 8)
-      - "127.0.0.1:${PMA_PORT:-8081}:80"
+      - "${PMA_PORT:-8081}:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
@@ -192,8 +191,7 @@ services:
     restart: unless-stopped
     user: "nobody"
     ports:
-      # Hardening: Chỉ bind 127.0.0.1 (Biện pháp 8)
-      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -220,7 +218,7 @@ services:
     restart: unless-stopped
     user: "472"
     ports:
-      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
+      - "${GRAFANA_PORT:-3001}:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-GrafanaAdminSecurePass2026!#}

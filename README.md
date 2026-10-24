@@ -103,6 +103,16 @@ Toàn bộ 11 container được điều phối tập trung qua `docker-compose.
 | **Grafana Dashboard** | `http://<SERVER_IP>:3001` | `admin` | `123456` | Theo dõi 3 dashboards và tra cứu log |
 | **Prometheus Targets** | `http://<SERVER_IP>:9090/targets` | *(Không)* | *(Không)* | Kiểm tra trạng thái các thành phần giám sát |
 
+> [!NOTE]
+> **Hướng dẫn truy cập hệ thống:**
+> - `<SERVER_IP>` là địa chỉ IP của máy chủ / máy ảo Ubuntu của bạn. Trên terminal máy ảo Ubuntu, chạy lệnh `hostname -I` (hoặc `ip a`) để lấy IP (ví dụ: `192.168.1.50`).
+> - **Truy cập trực tiếp trên máy ảo Ubuntu:** Thay `<SERVER_IP>` bằng `localhost`:
+>   - Web Gallery: [https://localhost/](https://localhost/) hoặc [http://localhost/](http://localhost/)
+>   - phpMyAdmin: [http://localhost:8081](http://localhost:8081)
+>   - Grafana Dashboard: [http://localhost:3001](http://localhost:3001)
+>   - Prometheus Targets: [http://localhost:9090/targets](http://localhost:9090/targets)
+> - **Truy cập từ trình duyệt máy tính Windows:** Nhập `https://<IP_Ubuntu>/` (ví dụ `https://192.168.1.50/`). Nếu trình duyệt cảnh báo chứng chỉ SSL tự ký, bấm **Nâng cao (Advanced) -> Tiếp tục truy cập (Proceed)**.
+
 ---
 
 ## 5. Hướng dẫn cài đặt và triển khai
