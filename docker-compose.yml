@@ -246,9 +246,10 @@ services:
     restart: unless-stopped
     privileged: false
     command:
-      - --housekeeping_interval=30s
-      - --max_housekeeping_interval=60s
-      - --disable_metrics=disk,tcp,udp,percpu,sched,process
+      - --housekeeping_interval=60s
+      - --max_housekeeping_interval=120s
+      - --docker_only=true
+      - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl,process
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
