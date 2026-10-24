@@ -1,0 +1,26 @@
+name: 🚀 CI Validation - Đề 31 Gallery System
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: 🔍 Validate Docker Compose & Configs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: docker compose config --quiet
+
+      - name: Check env example exists
+        run: |
+          if [ ! -f ".env" ] && [ ! -f ".env.example" ]; then
+            echo "❌ Thiếu file .env hoặc .env.example"
+            exit 1
+          fi
+          echo "✅ Config files OK"
