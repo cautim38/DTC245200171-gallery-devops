@@ -290,10 +290,9 @@ services:
     container_name: gallery_mysqld_exporter
     restart: unless-stopped
     command:
-      - --mysqld.address=mysql:3306
-      - --mysqld.username=mysqld_exporter
-    environment:
-      - MYSQL_PWD=${MYSQL_EXPORTER_PASSWORD:-123456}
+      - --config.my-cnf=/.my.cnf
+    volumes:
+      - ./mysql/.my.cnf:/.my.cnf:ro
     networks:
       - monitoring
       - backend
