@@ -249,7 +249,8 @@ services:
       - --housekeeping_interval=60s
       - --max_housekeeping_interval=120s
       - --docker_only=true
-      - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl,process
+      - --disable_root_cgroup_stats=true
+      - --disable_metrics=advtcp,cpu_topology,cpuset,disk,diskIO,hugetlb,memory_numa,percpu,perf_event,process,referenced_memory,resctrl,sched,tcp,udp
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
