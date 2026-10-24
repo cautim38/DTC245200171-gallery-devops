@@ -1,0 +1,58 @@
+================================================================================
+BÁO CÁO MÔN HỌC: QUẢN TRỊ VÀ TRIỂN KHAI HỆ THỐNG PHẦN MỀM - ĐỀ 31
+MINH CHỨNG BƯỚC 3: CẤU HÌNH NGINX REVERSE PROXY, SSL HTTPS VÀ SECURITY HEADERS
+Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Lớp: CNTT K23C
+Thời gian ghi nhận: Fri Oct 23 04:17:30 PM CST 2026
+================================================================================
+
+[1] Kiểm tra cú pháp tệp cấu hình Nginx (nginx -t):
+$ docker exec gallery_nginx nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+[2] Kiểm tra thông tin chứng chỉ SSL X.509 tự ký:
+$ openssl x509 -in ./nginx/certs/gallery.crt -noout -subject -issuer -dates
+subject=C=VN, ST=ThaiNguyen, L=ThaiNguyen, O=ICTU, OU=CNTT_K23C, CN=gallery.local
+issuer=C=VN, ST=ThaiNguyen, L=ThaiNguyen, O=ICTU, OU=CNTT_K23C, CN=gallery.local
+notBefore=Oct 23 08:00:00 2026 GMT
+notAfter=Oct 23 08:00:00 2027 GMT
+
+[3] Kiểm tra phản hồi HTTP cổng 80 (Chuyển hướng 301 sang HTTPS):
+$ curl -sI http://localhost/
+HTTP/1.1 301 Moved Permanently
+Server: nginx
+Date: Fri, 23 Oct 2026 09:17:35 GMT
+Content-Type: text/html
+Content-Length: 169
+Connection: keep-alive
+Location: https://localhost/
+
+[4] Kiểm tra phản hồi HTTPS cổng 443 kèm bộ Security Headers đầy đủ:
+$ curl -k -sI https://localhost/
+HTTP/1.1 200 OK
+Server: nginx
+Date: Fri, 23 Oct 2026 09:17:40 GMT
+Content-Type: text/html; charset=utf-8
+Connection: keep-alive
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self';
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+[5] Kiểm tra tính năng Rate Limiting (Giới hạn tần suất đăng nhập):
+$ bash test-ratelimit.sh
+[+] Bắt đầu gửi 10 requests dồn dập vào endpoint /auth/login...
+Request 1: HTTP 200
+Request 2: HTTP 200
+Request 3: HTTP 200
+Request 4: HTTP 200
+Request 5: HTTP 200
+Request 6: HTTP 429 Too Many Requests (Rate limit triggered!)
+Request 7: HTTP 429 Too Many Requests (Rate limit triggered!)
+Request 8: HTTP 429 Too Many Requests (Rate limit triggered!)
+Request 9: HTTP 429 Too Many Requests (Rate limit triggered!)
+Request 10: HTTP 429 Too Many Requests (Rate limit triggered!)
+[+] KẾT QUẢ: Nginx Rate Limiting hoạt động chính xác!

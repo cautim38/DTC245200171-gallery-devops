@@ -1,0 +1,55 @@
+================================================================================
+BÁO CÁO MÔN HỌC: QUẢN TRỊ VÀ TRIỂN KHAI HỆ THỐNG PHẦN MỀM - ĐỀ 31
+MINH CHỨNG BƯỚC 6: BẢO MẬT HỆ THỐNG VÀ GIA CỐ AN TOÀN THÔNG TIN (HARDENING)
+Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Lớp: CNTT K23C
+Thời gian ghi nhận: Fri Oct 23 04:20:55 PM CST 2026
+================================================================================
+
+[1] Kiểm tra Container Non-root Users:
+$ docker exec gallery_app id
+uid=1000(node) gid=1000(node) groups=1000(node)
+
+$ docker exec gallery_nginx id
+uid=101(nginx) gid=101(nginx) groups=101(nginx)
+
+$ docker exec gallery_prometheus id
+uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)
+
+[2] Kiểm tra cô lập mạng nội bộ (Internal backend network):
+$ docker network inspect gallery_backend | jq '.[0].Internal'
+true
+(Mạng backend được cấu hình internal: true, cô lập hoàn toàn MySQL khỏi Internet)
+
+[3] Kiểm tra chính sách đặc quyền tối thiểu (Security Opts & Capabilities):
+$ docker inspect gallery_nginx | jq '.[0].HostConfig.SecurityOpt'
+[
+  "no-new-privileges:true"
+]
+$ docker inspect gallery_nginx | jq '.[0].HostConfig.CapDrop'
+[
+  "ALL"
+]
+
+[4] Kiểm tra giới hạn hạn ngạch tài nguyên (CPU & Memory Quotas):
+$ docker inspect gallery_app | jq '.[0].HostConfig | {Memory: .Memory, NanoCpus: .NanoCpus}'
+{
+  "Memory": 536870912,
+  "NanoCpus": 1000000000
+}
+(Giới hạn tối đa 512MB RAM và 1.0 CPU cho ứng dụng)
+
+[5] Kiểm tra cấu hình Tường lửa máy chủ (UFW Firewall):
+$ sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+80/tcp                     ALLOW IN    Anywhere
+443/tcp                    ALLOW IN    Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+80/tcp (v6)                ALLOW IN    Anywhere (v6)
+443/tcp (v6)               ALLOW IN    Anywhere (v6)

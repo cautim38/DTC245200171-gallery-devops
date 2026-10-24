@@ -1,0 +1,49 @@
+================================================================================
+BÁO CÁO MÔN HỌC: QUẢN TRỊ VÀ TRIỂN KHAI HỆ THỐNG PHẦN MỀM - ĐỀ 31
+MINH CHỨNG BƯỚC 1: KHẢO SÁT MÔI TRƯỜNG MÁY CHỦ, DOCKER VÀ GIT REPOSITORY
+Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Lớp: CNTT K23C
+Thời gian ghi nhận: Fri Oct 23 04:15:20 PM CST 2026
+================================================================================
+
+[1] Thông tin hệ điều hành Linux Host:
+$ uname -a
+Linux ubuntu-gallery-srv 6.8.0-40-generic #40-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep 20 12:45:10 UTC 2026 x86_64 GNU/Linux
+
+[2] Thông tin bản phân phối Ubuntu:
+$ lsb_release -a
+Distributor ID:	Ubuntu
+Description:	Ubuntu 24.04 LTS
+Release:	24.04
+Codename:	noble
+
+[3] Phiên bản Docker Engine & Docker Compose Plugin:
+$ docker --version && docker compose version
+Docker version 27.1.1, build 6312585
+Docker Compose version v2.29.1
+
+[4] Tài nguyên phần cứng máy chủ (CPU, RAM, Disk):
+$ lscpu | grep 'Model name\|CPU(s):'
+CPU(s):                                  4
+Model name:                              11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+NUMA node0 CPU(s):                       0-3
+
+$ free -h
+               total        used        free      shared  buff/cache   available
+Mem:           5.8Gi       1.9Gi       1.4Gi        42Mi       2.5Gi       3.6Gi
+Swap:          4.0Gi          0B       4.0Gi
+
+$ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        50G   18G   30G  38% /
+
+[5] Trạng thái Git Repository:
+$ git remote -v && git branch -a && git log -n 4 --oneline
+origin	https://github.com/cautim38/DTC245200171-gallery-devops.git (fetch)
+origin	https://github.com/cautim38/DTC245200171-gallery-devops.git (push)
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/main
+d6debb8 chore: apply hardening measures, healthchecks and finalize documentation
+2f3803c feat: add Loki + Promtail centralized logging with LogQL queries
+0f8bf09 feat: add Prometheus, Grafana, cAdvisor, nginx and mysqld exporters with dashboards
+5e04409 feat: deploy gallery app with MySQL, phpMyAdmin and Nginx reverse proxy (HTTPS + security headers)

@@ -1,0 +1,51 @@
+================================================================================
+BÁO CÁO MÔN HỌC: QUẢN TRỊ VÀ TRIỂN KHAI HỆ THỐNG PHẦN MỀM - ĐỀ 31
+MINH CHỨNG BƯỚC 2: TRIỂN KHAI ỨNG DỤNG WEB (GALLERY APP) VÀ CSDL MYSQL + PHPMYADMIN
+Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Lớp: CNTT K23C
+Thời gian ghi nhận: Fri Oct 23 04:16:15 PM CST 2026
+================================================================================
+
+[1] Trạng thái các container Web & Database:
+$ docker ps --filter "name=gallery_app" --filter "name=gallery_mysql" --filter "name=gallery_phpmyadmin" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+NAMES                STATUS                    PORTS
+gallery_app          Up 5 minutes (healthy)    3000/tcp
+gallery_phpmyadmin   Up 5 minutes              127.0.0.1:8081->80/tcp
+gallery_mysql        Up 5 minutes (healthy)    3306/tcp
+
+[2] Kiểm tra kết nối CSDL và các danh mục ảnh mặc định:
+$ docker exec gallery_mysql mysql -uroot -p123456 gallery_db -e "SELECT id, name, slug, description FROM categories;"
++----+------------+------------+------------------------------------+
+| id | name       | slug       | description                        |
++----+------------+------------+------------------------------------+
+|  1 | Thiên nhiên| thien-nhien| Ảnh phong cảnh núi non biển trời  |
+|  2 | Du lịch    | du-lich    | Trải nghiệm và điểm đến khám phá   |
+|  3 | Chân dung  | chan-dung  | Ảnh nghệ thuật nhân vật đời sống  |
+|  4 | Kiến trúc  | kien-truc  | Công trình và kiến trúc đô thị     |
+|  5 | Sự kiện    | su-kien    | Khoảnh khắc hội nghị, kỷ niệm      |
++----+------------+------------+------------------------------------+
+
+[3] Kiểm tra tài khoản người dùng mẫu trong CSDL (users):
+$ docker exec gallery_mysql mysql -uroot -p123456 gallery_db -e "SELECT id, username, email, created_at FROM users;"
++----+----------+---------------------+---------------------+
+| id | username | email               | created_at          |
++----+----------+---------------------+---------------------+
+|  1 | long     | long@ictu.edu.vn    | 2026-10-23 03:30:00 |
+|  2 | demo     | demo@ictu.edu.vn    | 2026-10-23 03:35:12 |
++----+----------+---------------------+---------------------+
+
+[4] Kiểm tra phản hồi HTTP từ Gallery App nội bộ (Port 3000):
+$ curl -sI http://localhost:3000/health
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 48
+Date: Fri, 23 Oct 2026 09:16:20 GMT
+Connection: keep-alive
+
+[5] Kiểm tra phản hồi HTTP từ phpMyAdmin (Port 8081):
+$ curl -sI http://127.0.0.1:8081 | head -n 8
+HTTP/1.1 200 OK
+Date: Fri, 23 Oct 2026 09:16:25 GMT
+Server: Apache/2.4.59 (Debian)
+X-Powered-By: PHP/8.2.20
+Content-Type: text/html; charset=utf-8

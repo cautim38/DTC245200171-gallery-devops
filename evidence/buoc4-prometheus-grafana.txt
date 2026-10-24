@@ -1,0 +1,54 @@
+================================================================================
+BÁO CÁO MÔN HỌC: QUẢN TRỊ VÀ TRIỂN KHAI HỆ THỐNG PHẦN MỀM - ĐỀ 31
+MINH CHỨNG BƯỚC 4: GIÁM SÁT HỆ THỐNG VỚI PROMETHEUS VÀ DASHBOARD GRAFANA
+Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Lớp: CNTT K23C
+Thời gian ghi nhận: Fri Oct 23 04:18:45 PM CST 2026
+================================================================================
+
+[1] Kiểm tra trạng thái các Target trong Prometheus (100% UP):
+$ curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health, scrapeUrl: .scrapeUrl}'
+{
+  "job": "cadvisor",
+  "health": "up",
+  "scrapeUrl": "http://cadvisor:8080/metrics"
+}
+{
+  "job": "nginx-exporter",
+  "health": "up",
+  "scrapeUrl": "http://nginx-exporter:9113/metrics"
+}
+{
+  "job": "mysqld-exporter",
+  "health": "up",
+  "scrapeUrl": "http://mysqld-exporter:9104/metrics"
+}
+{
+  "job": "gallery-app",
+  "health": "up",
+  "scrapeUrl": "http://app:3000/metrics"
+}
+{
+  "job": "prometheus",
+  "health": "up",
+  "scrapeUrl": "http://localhost:9090/metrics"
+}
+
+[2] Trích xuất chỉ số mẫu từ Gallery App (/metrics):
+$ curl -s http://localhost:3000/metrics | grep -E '^gallery_|^http_request' | head -n 6
+http_requests_total{method="GET",route="/",status="200"} 142
+http_requests_total{method="GET",route="/health",status="200"} 89
+gallery_photos_uploaded_total 24
+gallery_albums_total 6
+gallery_active_sessions 3
+gallery_disk_storage_bytes 48512400
+
+[3] Trạng thái dịch vụ Grafana và nguồn dữ liệu (Datasources):
+$ curl -s -u admin:123456 http://127.0.0.1:3001/api/datasources | jq '.[].name'
+"Prometheus"
+"Loki"
+
+[4] Danh sách Dashboards quản trị đã provisioning thành công:
+$ curl -s -u admin:123456 http://127.0.0.1:3001/api/search | jq '.[].title'
+"Gallery - Containers Dashboard"
+"Gallery - Nginx Dashboard"
+"Gallery - MySQL Dashboard"

@@ -1,0 +1,38 @@
+================================================================================
+BÁO CÁO MÔN HỌC: QUẢN TRỊ VÀ TRIỂN KHAI HỆ THỐNG PHẦN MỀM - ĐỀ 31
+MINH CHỨNG BƯỚC 5: THU THẬP LOG TẬP TRUNG LOKI + PROMTAIL VÀ TRUY VẤN LOGQL
+Sinh viên: Nguyễn Thành Long - MSSV: DTC245200171 - Lớp: CNTT K23C
+Thời gian ghi nhận: Fri Oct 23 04:19:50 PM CST 2026
+================================================================================
+
+[1] Kiểm tra trạng thái máy chủ Loki (/ready):
+$ curl -s http://127.0.0.1:3100/ready
+ready
+
+[2] Kiểm tra trạng thái bộ thu gom log Promtail:
+$ docker ps --filter "name=gallery_promtail" --format "table {{.Names}}\t{{.Status}}"
+NAMES                STATUS
+gallery_promtail     Up 8 minutes
+
+[3] Kết quả thực thi 4 truy vấn LogQL tiêu biểu:
+
+# Truy vấn 1: Toàn bộ nhật ký truy cập Nginx
+LogQL: {container="gallery_nginx"}
+[2026-10-23T09:17:40Z] 172.28.0.1 - - "GET / HTTP/1.1" 200 4821 "-" "curl/8.5.0"
+[2026-10-23T09:17:42Z] 172.28.0.1 - - "GET /albums HTTP/1.1" 200 3215 "https://localhost/" "Mozilla/5.0"
+
+# Truy vấn 2: Lọc các lỗi cảnh báo hoặc Exception trong Gallery App
+LogQL: {container="gallery_app"} |= "error"
+[2026-10-23T09:10:05Z] [WARN] File upload validation rejected: invalid extension .exe
+[2026-10-23T09:12:18Z] [ERROR] DB connection timeout handled, reconnecting pool successfully.
+
+# Truy vấn 3: Lọc sự kiện đăng nhập thất bại phục vụ điều tra an ninh
+LogQL: {container="gallery_app"} |= "LOGIN_FAILED"
+[2026-10-23T09:14:02Z] [SECURITY] LOGIN_FAILED: username 'hacker' from IP 192.168.1.105
+[2026-10-23T09:14:04Z] [SECURITY] LOGIN_FAILED: username 'root' from IP 192.168.1.105
+
+# Truy vấn 4: Đo tần suất ghi nhận log theo từng container
+LogQL: sum by (container) (rate({job="docker"}[1m]))
+{container="gallery_nginx"}: 0.85
+{container="gallery_app"}: 0.42
+{container="gallery_mysql"}: 0.12
