@@ -17,8 +17,10 @@ if command -v ufw >/dev/null 2>&1; then
     sudo ufw allow 22/tcp comment 'SSH Port'
     sudo ufw allow 80/tcp comment 'Nginx HTTP'
     sudo ufw allow 443/tcp comment 'Nginx HTTPS'
+    sudo ufw allow 8081/tcp comment 'phpMyAdmin'
+    sudo ufw allow 3001/tcp comment 'Grafana Monitoring'
     sudo ufw --force enable
-    echo "  -> UFW đã kích hoạt thành công (Chỉ mở 22, 80, 443)."
+    echo "  -> UFW đã kích hoạt thành công (Mở 22, 80, 443, 8081, 3001)."
 fi
 
 # 2. Cấu hình SSH an toàn
